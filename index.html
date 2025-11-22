@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>星际战机: 极速领域 (数值增强版)</title>
+    <title>星际战机: 极速领域 (音效版)</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         /* --- 核心样式 --- */
@@ -38,48 +38,38 @@
             display: flex; flex-direction: column; justify-content: space-between; z-index: 10;
         }
 
-        /* 顶部 HUD */
         .hud-top { display: flex; justify-content: space-between; align-items: center; pointer-events: auto; }
         .score-box { text-shadow: 0 0 5px var(--neon-blue); text-align: right; }
-        .score-label { font-size: 12px; color: #8899ac; }
         .score-val { font-size: 24px; font-weight: 700; color: #fff; }
         
-        #btnPause {
+        /* 顶部按钮组 */
+        .top-btns { display: flex; gap: 10px; }
+        .icon-btn {
             width: 40px; height: 40px;
             border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            color: #fff; font-size: 20px; background: rgba(0,0,0,0.5);
+            color: #fff; font-size: 16px; background: rgba(0,0,0,0.5);
             cursor: pointer; touch-action: manipulation;
         }
-        #btnPause:active { transform: scale(0.9); background: var(--neon-blue); border-color: var(--neon-blue); }
+        .icon-btn:active { transform: scale(0.9); background: var(--neon-blue); }
 
         /* 底部 HUD */
         .hud-bottom { margin-bottom: 10px; }
         .coin-display { font-size: 18px; color: #ffd700; margin-bottom: 5px; text-shadow: 0 0 5px #ffd700; }
         
-        /* 血条容器优化 */
         .hp-container {
-            position: relative;
-            width: 100%; height: 16px; /* 加高一点以便显示文字 */
-            background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.3);
+            position: relative; width: 100%; height: 16px;
+            background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3);
             border-radius: 8px; overflow: hidden;
         }
-        .hp-bar { 
-            width: 100%; height: 100%; 
-            background: linear-gradient(90deg, #ff3333, #ff0055); 
-            transition: width 0.2s; 
-        }
-        /* 血量文字 */
+        .hp-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #ff3333, #ff0055); transition: width 0.2s; }
         .hp-text {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; justify-content: center; align-items: center;
-            font-size: 10px; font-weight: bold; color: #fff;
-            text-shadow: 1px 1px 2px #000; z-index: 2;
-            letter-spacing: 1px;
+            font-size: 10px; font-weight: bold; color: #fff; text-shadow: 1px 1px 2px #000; z-index: 2;
         }
 
-        /* --- 弹窗系统 --- */
+        /* --- 弹窗 --- */
         .modal {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 5, 10, 0.9); backdrop-filter: blur(10px);
@@ -89,14 +79,13 @@
         .hidden { opacity: 0; pointer-events: none !important; }
 
         .title { font-size: 40px; font-weight: 900; color: transparent; -webkit-text-stroke: 1px var(--neon-blue); margin-bottom: 10px; text-align: center; }
-        .high-score { color: var(--neon-purple); font-size: 14px; margin-bottom: 30px; letter-spacing: 1px; }
+        .high-score { color: var(--neon-purple); font-size: 14px; margin-bottom: 30px; }
 
         .c-btn {
             background: transparent; color: var(--neon-blue);
             border: 2px solid var(--neon-blue); padding: 12px 40px;
             font-family: 'Orbitron'; font-size: 18px; font-weight: bold;
-            cursor: pointer; margin: 10px; transition: 0.3s; position: relative; overflow: hidden;
-            touch-action: manipulation;
+            cursor: pointer; margin: 10px; transition: 0.3s; touch-action: manipulation;
         }
         .c-btn:active { background: var(--neon-blue); color: #000; transform: scale(0.95); }
         .c-btn.red { border-color: var(--neon-red); color: var(--neon-red); }
@@ -119,9 +108,12 @@
     <!-- 战斗 UI -->
     <div id="hud" class="ui-layer hidden">
         <div class="hud-top">
-            <div id="btnPause">||</div>
+            <div class="top-btns">
+                <div class="icon-btn" id="btnPause">||</div>
+                <div class="icon-btn" id="btnMute">🔊</div>
+            </div>
             <div class="score-box">
-                <div class="score-label">SCORE</div>
+                <div style="font-size:12px; color:#8899ac">SCORE</div>
                 <div class="score-val" id="uiScore">0</div>
             </div>
         </div>
@@ -137,22 +129,22 @@
     <!-- 开始菜单 -->
     <div id="startScreen" class="modal">
         <h1 class="title" style="-webkit-text-stroke:0; color:white; text-shadow:0 0 20px var(--neon-blue)">CYBER<br>WING</h1>
-        <div class="high-score">BEST SCORE: <span id="menuBestScore">0</span></div>
+        <div class="high-score">BEST: <span id="menuBestScore">0</span></div>
+        <p style="color:#aaa; font-size:12px; margin-bottom:20px">(点击开始以激活音效)</p>
         <button class="c-btn" id="btnStart">START MISSION</button>
     </div>
 
     <!-- 暂停菜单 -->
     <div id="pauseMenu" class="modal hidden">
-        <h2 style="color:white; margin-bottom:30px; font-size:30px">PAUSED</h2>
+        <h2 style="color:white; margin-bottom:30px;">PAUSED</h2>
         <button class="c-btn" id="btnResume">RESUME</button>
-        <button class="c-btn red" id="btnQuit">EXIT GAME</button>
+        <button class="c-btn red" id="btnQuit">EXIT</button>
     </div>
 
     <!-- 商店 -->
     <div id="shopScreen" class="modal hidden">
-        <h2 style="color:var(--neon-green); margin-bottom:10px">WAVE COMPLETE</h2>
+        <h2 style="color:var(--neon-green);">WAVE COMPLETE</h2>
         <p style="color:#aaa; margin-bottom:20px">CREDITS: <span id="shopCoins" style="color:#ffd700">0</span></p>
-        
         <div class="shop-grid">
             <div class="card" id="btn-dmg">
                 <div style="color:var(--neon-blue); font-weight:bold">火力提升</div>
@@ -180,14 +172,163 @@
 
     <!-- 结算 -->
     <div id="overScreen" class="modal hidden">
-        <h1 style="color:var(--neon-red); margin-bottom:10px">CRITICAL FAILURE</h1>
-        <h2 style="color:white; font-size:24px; margin-bottom:5px">SCORE: <span id="endScore">0</span></h2>
+        <h1 style="color:var(--neon-red);">FAILURE</h1>
+        <h2 style="color:white;">SCORE: <span id="endScore">0</span></h2>
         <button class="c-btn" id="btnRetry">RETRY</button>
         <button class="c-btn red" id="btnMenu">MENU</button>
     </div>
 </div>
 
 <script>
+/**
+ * 音频引擎 - 使用 Web Audio API 实时合成音效
+ * 不需要外部文件，纯代码生成
+ */
+class SoundManager {
+    constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.bgmOsc = null;
+        this.bgmGain = null;
+    }
+
+    init() {
+        if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+    }
+
+    toggleMute() {
+        this.muted = !this.muted;
+        if (this.muted) {
+            if(this.bgmGain) this.bgmGain.gain.value = 0;
+        } else {
+            if(this.bgmGain) this.bgmGain.gain.value = 0.15;
+        }
+        return this.muted;
+    }
+
+    // 播放音效
+    play(type) {
+        if (this.muted || !this.ctx) return;
+        const t = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        switch (type) {
+            case 'shoot': // 激光
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, t);
+                osc.frequency.exponentialRampToValueAtTime(100, t + 0.1);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                osc.start(t);
+                osc.stop(t + 0.1);
+                break;
+
+            case 'explode': // 爆炸 (模拟噪声)
+                // 噪声需要 bufferSource
+                const bufferSize = this.ctx.sampleRate * 0.5; // 0.5 sec
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const noiseGain = this.ctx.createGain();
+                noise.connect(noiseGain);
+                noiseGain.connect(this.ctx.destination);
+                
+                noiseGain.gain.setValueAtTime(0.3, t);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                noise.start(t);
+                break;
+
+            case 'coin': // 金币
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(1200, t);
+                osc.frequency.setValueAtTime(1600, t + 0.05);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                osc.start(t);
+                osc.stop(t + 0.3);
+                break;
+
+            case 'powerup': // 升级/购买
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(220, t);
+                osc.frequency.linearRampToValueAtTime(880, t + 0.2);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.linearRampToValueAtTime(0, t + 0.3);
+                osc.start(t);
+                osc.stop(t + 0.3);
+                break;
+            
+            case 'hit': // 被击中
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, t);
+                osc.frequency.linearRampToValueAtTime(50, t + 0.2);
+                gain.gain.setValueAtTime(0.2, t);
+                gain.gain.linearRampToValueAtTime(0, t + 0.2);
+                osc.start(t);
+                osc.stop(t + 0.2);
+                break;
+        }
+    }
+
+    // 启动背景氛围音 (Drone)
+    startBGM() {
+        if (!this.ctx || this.bgmOsc) return;
+        this.bgmOsc = this.ctx.createOscillator();
+        this.bgmGain = this.ctx.createGain();
+        
+        // 低频震荡 Sawtooth
+        this.bgmOsc.type = 'sawtooth';
+        this.bgmOsc.frequency.value = 50; // 50Hz 低音
+        
+        // LFO 制造波动感
+        const lfo = this.ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.value = 0.5; // 0.5Hz 波动
+        const lfoGain = this.ctx.createGain();
+        lfoGain.gain.value = 500; // Filter 变动幅度
+        
+        // 低通滤波器
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 800; 
+
+        // 连接: LFO -> LFO Gain -> Filter Frequency
+        lfo.connect(lfoGain);
+        lfoGain.connect(filter.frequency);
+
+        // 连接: Osc -> Filter -> Gain -> Dest
+        this.bgmOsc.connect(filter);
+        filter.connect(this.bgmGain);
+        this.bgmGain.connect(this.ctx.destination);
+
+        this.bgmGain.gain.value = this.muted ? 0 : 0.15;
+        
+        this.bgmOsc.start();
+        lfo.start();
+    }
+
+    stopBGM() {
+        if(this.bgmOsc) {
+            // 简单地将音量设为0，保持对象存活以便复用太麻烦，直接停止
+            // 在这个简单版本中，我们依赖 gain = 0 来静音，彻底停止等游戏结束
+            if(this.bgmGain) this.bgmGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.5);
+            setTimeout(() => {
+                if(this.bgmOsc) { this.bgmOsc.stop(); this.bgmOsc = null; }
+            }, 600);
+        }
+    }
+}
+
 class Game {
     constructor() {
         this.c = document.getElementById('gameCanvas');
@@ -196,6 +337,8 @@ class Game {
         
         this.resize();
         window.addEventListener('resize', () => this.resize());
+
+        this.sound = new SoundManager(); // 实例化音效管理器
 
         this.highScore = 0;
         try { this.highScore = parseInt(localStorage.getItem('cyber_wing_hs')) || 0; } catch(e) {}
@@ -253,9 +396,18 @@ class Game {
         click('btn-rate', () => this.buy('rate'));
         click('btn-multi', () => this.buy('multi'));
         click('btn-heal', () => this.buy('heal'));
+        
+        // 静音按钮逻辑
+        click('btnMute', () => {
+            const isMuted = this.sound.toggleMute();
+            document.getElementById('btnMute').innerText = isMuted ? '🔇' : '🔊';
+        });
     }
 
     start() {
+        this.sound.init(); // 初始化音频上下文
+        this.sound.startBGM(); // 启动背景音
+        
         document.getElementById('startScreen').classList.add('hidden');
         document.getElementById('hud').classList.remove('hidden');
         this.reset();
@@ -280,6 +432,7 @@ class Game {
     }
 
     quit() {
+        this.sound.stopBGM();
         this.state = 'MENU';
         document.querySelectorAll('.modal').forEach(el => el.classList.add('hidden'));
         document.getElementById('hud').classList.add('hidden');
@@ -308,6 +461,7 @@ class Game {
 
     restart() {
         document.getElementById('overScreen').classList.add('hidden');
+        this.sound.startBGM();
         this.reset();
         this.state = 'PLAY';
         this.run();
@@ -317,7 +471,7 @@ class Game {
         document.getElementById('shopScreen').classList.add('hidden');
         this.wave++;
         this.waveProgress = 0;
-        this.waveGoal = 15 + this.wave * 8; // 每波增加更多击杀目标
+        this.waveGoal = 15 + this.wave * 8;
         this.entities.pBullets = [];
         this.entities.eBullets = [];
         this.entities.items = [];
@@ -336,6 +490,7 @@ class Game {
     update() {
         // 玩家射击
         if (this.frame % Math.floor(this.player.rate) === 0) {
+            this.sound.play('shoot'); // 播放射击音效
             const cnt = this.player.bullets;
             const isBuffed = this.player.buffTime > 0;
             if(isBuffed) this.player.buffTime--;
@@ -350,8 +505,6 @@ class Game {
             }
         }
 
-        // 敌人生成公式优化：越往后，生成越快
-        // Wave 1: 50帧/个, Wave 5: 30帧/个, Wave 10: 10帧/个
         const spawnRate = Math.max(10, 55 - this.wave * 4); 
         if (this.frame % spawnRate === 0) this.spawnEnemy();
 
@@ -361,19 +514,16 @@ class Game {
     spawnEnemy() {
         const r = Math.random();
         let type = 0; 
-        // 随波次增加高级敌人概率
         if (this.wave > 1 && r < 0.3 + (this.wave*0.02)) type = 1;
         if (this.wave > 2 && r < 0.15 + (this.wave*0.02)) type = 2;
         if (this.wave > 3 && r < 0.1 + (this.wave*0.02)) type = 3;
 
-        const hpScale = 1 + (this.wave * 0.25); // 血量每波+25%
-        
-        // 增加了 dmg (伤害) 属性
+        const hpScale = 1 + (this.wave * 0.25);
         const stats = [
-            { hp: 20, spd: 3, col: '#ff0055', score: 10, r:15, dmg: 15 }, // Basic: 伤害15
-            { hp: 10, spd: 5, col: '#ffff00', score: 20, r:12, dmg: 10 }, // Fast: 伤害10
-            { hp: 100, spd: 1, col: '#bc13fe', score: 50, r:25, dmg: 40 }, // Tank: 伤害40
-            { hp: 40, spd: 2, col: '#fff', score: 30, r:18, dmg: 15 }     // Shooter: 伤害15
+            { hp: 20, spd: 3, col: '#ff0055', score: 10, r:15, dmg: 15 }, 
+            { hp: 10, spd: 5, col: '#ffff00', score: 20, r:12, dmg: 10 }, 
+            { hp: 100, spd: 1, col: '#bc13fe', score: 50, r:25, dmg: 40 }, 
+            { hp: 40, spd: 2, col: '#fff', score: 30, r:18, dmg: 15 }
         ];
 
         const cfg = stats[type];
@@ -389,19 +539,17 @@ class Game {
         const { pBullets, eBullets, enemies, items } = this.entities;
         const p = this.player;
 
-        // 玩家子弹
         for (let i = pBullets.length-1; i>=0; i--) {
             let b = pBullets[i];
             b.x += b.vx; b.y += b.vy;
             if (b.y < -20) pBullets.splice(i, 1);
         }
         
-        // 敌方子弹
         for (let i = eBullets.length-1; i>=0; i--) {
             let b = eBullets[i];
             b.x += b.vx; b.y += b.vy;
             if (Math.hypot(b.x - p.x, b.y - p.y) < p.r + 5) {
-                this.takeDamage(b.dmg); // 子弹伤害
+                this.takeDamage(b.dmg); 
                 this.explode(p.x, p.y, '#f00', 5);
                 eBullets.splice(i, 1);
             } else if (b.y > this.h || b.y < -50 || b.x < -50 || b.x > this.w + 50) {
@@ -409,38 +557,34 @@ class Game {
             }
         }
 
-        // 物品
         for (let i = items.length-1; i>=0; i--) {
             let it = items[i];
             it.y += 2;
             if (Math.hypot(it.x - p.x, it.y - p.y) < p.r + 15) {
+                this.sound.play('coin'); // 播放金币音效
                 this.applyItem(it.type);
                 this.addText(it.label, p.x, p.y-30, '#fff');
                 items.splice(i, 1);
             } else if (it.y > this.h) items.splice(i, 1);
         }
 
-        // 敌人
         for (let i = enemies.length-1; i>=0; i--) {
             let e = enemies[i];
             e.y += e.spd;
 
-            // 射手开火
             if (e.type === 3 && this.frame - e.lastShot > 100) {
                 e.lastShot = this.frame;
                 let angle = Math.atan2(p.y - e.y, p.x - e.x);
-                // 敌人子弹伤害 15
                 eBullets.push({x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6, dmg: 15});
             }
 
-            // 撞玩家
             if (Math.hypot(e.x - p.x, e.y - p.y) < e.r + p.r) {
-                this.takeDamage(e.dmg); // 撞击伤害
+                this.takeDamage(e.dmg);
                 e.hp = 0;
+                this.sound.play('explode'); // 撞击爆炸
                 this.explode(e.x, e.y, e.color, 10);
             }
 
-            // 被玩家击中
             for (let j = pBullets.length-1; j>=0; j--) {
                 let b = pBullets[j];
                 if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + 10) {
@@ -448,6 +592,7 @@ class Game {
                     pBullets.splice(j, 1);
                     this.spawnParticle(b.x, b.y, '#fff', 1);
                     if (e.hp <= 0) {
+                        this.sound.play('explode'); // 敌人死亡爆炸
                         this.score += e.score;
                         this.coins += Math.ceil(e.score/2);
                         this.explode(e.x, e.y, e.color, 12);
@@ -468,10 +613,9 @@ class Game {
         this.entities.texts = this.entities.texts.filter(t => { t.y-=1; t.life-=0.02; return t.life>0; });
     }
 
-    // 受到伤害处理
     takeDamage(amount) {
+        this.sound.play('hit'); // 播放受伤音效
         this.player.hp -= amount;
-        // 伤害数字显示
         this.addText(`-${amount}`, this.player.x, this.player.y - 30, '#ff0055');
         this.checkOver();
         this.updateUI();
@@ -495,6 +639,7 @@ class Game {
 
     checkOver() {
         if (this.player.hp <= 0) {
+            this.sound.stopBGM();
             this.state = 'OVER';
             try {
                 if (this.score > this.highScore) {
@@ -521,13 +666,17 @@ class Game {
     buy(type) {
         const p = this.prices[type];
         if (type === 'heal') {
-            if (this.coins >= 50) { this.coins -= 50; this.player.hp = this.player.maxHp; }
+            if (this.coins >= 50) { 
+                this.coins -= 50; this.player.hp = this.player.maxHp; 
+                this.sound.play('powerup');
+            }
         } else if (this.coins >= p) {
             this.coins -= p;
             this.prices[type] = Math.floor(p * 1.5);
             if (type === 'dmg') this.player.dmg *= 1.2;
             if (type === 'rate') this.player.rate = Math.max(5, this.player.rate * 0.9);
             if (type === 'multi') this.player.bullets++;
+            this.sound.play('powerup');
         }
         this.updateShop();
         this.updateUI();
@@ -626,10 +775,8 @@ class Game {
     updateUI() {
         document.getElementById('uiScore').innerText = this.score;
         document.getElementById('uiCoins').innerText = this.coins;
-        // 更新血条
         const hpPct = Math.max(0, (this.player.hp/this.player.maxHp)*100);
         document.getElementById('uiHp').style.width = hpPct + "%";
-        // 更新血量文字
         document.getElementById('uiHpText').innerText = `HP: ${Math.floor(Math.max(0, this.player.hp))} / ${this.player.maxHp}`;
     }
 
