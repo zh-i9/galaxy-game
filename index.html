@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>星际战机: 极速领域 (修复版)</title>
+    <title>星际战机: 极速领域 (数值增强版)</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         /* --- 核心样式 --- */
@@ -44,7 +44,6 @@
         .score-label { font-size: 12px; color: #8899ac; }
         .score-val { font-size: 24px; font-weight: 700; color: #fff; }
         
-        /* 暂停按钮 */
         #btnPause {
             width: 40px; height: 40px;
             border: 2px solid rgba(255,255,255,0.3); border-radius: 50%;
@@ -57,38 +56,52 @@
         /* 底部 HUD */
         .hud-bottom { margin-bottom: 10px; }
         .coin-display { font-size: 18px; color: #ffd700; margin-bottom: 5px; text-shadow: 0 0 5px #ffd700; }
-        .hp-frame {
-            width: 100%; height: 8px; background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.3); transform: skewX(-15deg);
+        
+        /* 血条容器优化 */
+        .hp-container {
+            position: relative;
+            width: 100%; height: 16px; /* 加高一点以便显示文字 */
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px; overflow: hidden;
         }
-        .hp-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #ff3333, #ff0055); transition: width 0.2s; }
+        .hp-bar { 
+            width: 100%; height: 100%; 
+            background: linear-gradient(90deg, #ff3333, #ff0055); 
+            transition: width 0.2s; 
+        }
+        /* 血量文字 */
+        .hp-text {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 10px; font-weight: bold; color: #fff;
+            text-shadow: 1px 1px 2px #000; z-index: 2;
+            letter-spacing: 1px;
+        }
 
         /* --- 弹窗系统 --- */
         .modal {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 5, 10, 0.9); backdrop-filter: blur(10px);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 20; opacity: 1; transition: opacity 0.3s;
-            pointer-events: auto; /* 关键修复：确保弹窗可以点击 */
+            z-index: 20; opacity: 1; transition: opacity 0.3s; pointer-events: auto;
         }
         .hidden { opacity: 0; pointer-events: none !important; }
 
         .title { font-size: 40px; font-weight: 900; color: transparent; -webkit-text-stroke: 1px var(--neon-blue); margin-bottom: 10px; text-align: center; }
         .high-score { color: var(--neon-purple); font-size: 14px; margin-bottom: 30px; letter-spacing: 1px; }
 
-        /* 按钮 */
         .c-btn {
             background: transparent; color: var(--neon-blue);
             border: 2px solid var(--neon-blue); padding: 12px 40px;
             font-family: 'Orbitron'; font-size: 18px; font-weight: bold;
             cursor: pointer; margin: 10px; transition: 0.3s; position: relative; overflow: hidden;
-            touch-action: manipulation; /* 关键修复：优化移动端点击 */
+            touch-action: manipulation;
         }
-        .c-btn:active { background: var(--neon-blue); color: #000; box-shadow: 0 0 20px var(--neon-blue); transform: scale(0.95); }
+        .c-btn:active { background: var(--neon-blue); color: #000; transform: scale(0.95); }
         .c-btn.red { border-color: var(--neon-red); color: var(--neon-red); }
-        .c-btn.red:active { background: var(--neon-red); color: #fff; box-shadow: 0 0 20px var(--neon-red); }
+        .c-btn.red:active { background: var(--neon-red); color: #fff; }
 
-        /* 商店卡片 */
         .shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 90%; margin-bottom: 20px; }
         .card {
             background: rgba(255,255,255,0.05); border: 1px solid #333; padding: 10px;
@@ -96,9 +109,6 @@
         }
         .card:active { background: rgba(0, 243, 255, 0.2); border-color: var(--neon-blue); transform: scale(0.98); }
         .card.disabled { opacity: 0.4; filter: grayscale(1); pointer-events: none; }
-
-        /* 暂停菜单 */
-        #pauseMenu { z-index: 30; }
     </style>
 </head>
 <body>
@@ -117,7 +127,10 @@
         </div>
         <div class="hud-bottom">
             <div class="coin-display">⚡ <span id="uiCoins">0</span></div>
-            <div class="hp-frame"><div class="hp-bar" id="uiHp"></div></div>
+            <div class="hp-container">
+                <div class="hp-bar" id="uiHp"></div>
+                <div class="hp-text" id="uiHpText">HP: 100/100</div>
+            </div>
         </div>
     </div>
 
@@ -135,7 +148,7 @@
         <button class="c-btn red" id="btnQuit">EXIT GAME</button>
     </div>
 
-    <!-- 商店/过关 -->
+    <!-- 商店 -->
     <div id="shopScreen" class="modal hidden">
         <h2 style="color:var(--neon-green); margin-bottom:10px">WAVE COMPLETE</h2>
         <p style="color:#aaa; margin-bottom:20px">CREDITS: <span id="shopCoins" style="color:#ffd700">0</span></p>
@@ -169,19 +182,12 @@
     <div id="overScreen" class="modal hidden">
         <h1 style="color:var(--neon-red); margin-bottom:10px">CRITICAL FAILURE</h1>
         <h2 style="color:white; font-size:24px; margin-bottom:5px">SCORE: <span id="endScore">0</span></h2>
-        <div style="color:#888; font-size:14px; margin-bottom:30px">BEST: <span id="endBest">0</span></div>
         <button class="c-btn" id="btnRetry">RETRY</button>
         <button class="c-btn red" id="btnMenu">MENU</button>
     </div>
 </div>
 
 <script>
-/**
- * 修复说明：
- * 1. 使用 addEventListener 替代 HTML onclick，解决部分移动端点击失效问题。
- * 2. 增加了 try-catch 包裹 localStorage，防止隐私模式下报错。
- * 3. 优化了触摸事件绑定，防止误触。
- */
 class Game {
     constructor() {
         this.c = document.getElementById('gameCanvas');
@@ -191,24 +197,16 @@ class Game {
         this.resize();
         window.addEventListener('resize', () => this.resize());
 
-        // 2. 安全读取最高分
         this.highScore = 0;
-        try {
-            this.highScore = parseInt(localStorage.getItem('cyber_wing_hs')) || 0;
-        } catch(e) { console.log('Storage blocked'); }
+        try { this.highScore = parseInt(localStorage.getItem('cyber_wing_hs')) || 0; } catch(e) {}
         document.getElementById('menuBestScore').innerText = this.highScore;
 
         this.state = 'MENU';
         this.frame = 0;
         this.loopId = null;
-
-        // 初始化视觉
         this.stars = Array(50).fill().map(() => this.createStar());
         
-        // 绑定所有事件
         this.bindEvents();
-        
-        // 启动背景循环
         this.bgLoop();
     }
 
@@ -223,9 +221,7 @@ class Game {
         return {x: Math.random()*this.w, y: Math.random()*this.h, s: Math.random()*2, v: Math.random()+0.5};
     }
 
-    // 3. 统一事件绑定系统
     bindEvents() {
-        // 触摸/鼠标移动
         const moveHandler = (x, y) => {
             if (this.state === 'PLAY') {
                 const rect = this.c.getBoundingClientRect();
@@ -233,27 +229,19 @@ class Game {
                 this.player.y = Math.max(this.h/2, Math.min(this.h-50, y - rect.top - 50));
             }
         };
-
         this.c.addEventListener('mousemove', e => moveHandler(e.clientX, e.clientY));
         this.c.addEventListener('touchmove', e => {
-            e.preventDefault(); // 防止滚动
-            if(e.touches.length > 0) {
-                moveHandler(e.touches[0].clientX, e.touches[0].clientY);
-            }
+            e.preventDefault();
+            if(e.touches.length > 0) moveHandler(e.touches[0].clientX, e.touches[0].clientY);
         }, {passive:false});
 
-        // 按钮点击绑定 (使用 JS 绑定更可靠)
         const click = (id, fn) => {
             const el = document.getElementById(id);
             if(el) {
                 el.addEventListener('click', fn);
-                el.addEventListener('touchstart', (e) => {
-                    e.stopPropagation(); // 防止穿透
-                    fn();
-                }, {passive: true});
+                el.addEventListener('touchstart', (e) => { e.stopPropagation(); fn(); }, {passive: true});
             }
         };
-
         click('btnStart', () => this.start());
         click('btnPause', () => this.pause());
         click('btnResume', () => this.resume());
@@ -261,15 +249,11 @@ class Game {
         click('btnRetry', () => this.restart());
         click('btnMenu', () => this.quit());
         click('btnNext', () => this.nextWave());
-        
-        // 商店按钮
         click('btn-dmg', () => this.buy('dmg'));
         click('btn-rate', () => this.buy('rate'));
         click('btn-multi', () => this.buy('multi'));
         click('btn-heal', () => this.buy('heal'));
     }
-
-    // --- 游戏流程 ---
 
     start() {
         document.getElementById('startScreen').classList.add('hidden');
@@ -312,19 +296,13 @@ class Game {
             dmg: 20, rate: 20, bullets: 1,
             buffTime: 0
         };
-        
         this.score = 0;
         this.coins = 0;
         this.wave = 1;
         this.waveProgress = 0;
         this.waveGoal = 15;
-
         this.prices = { dmg: 100, rate: 150, multi: 500 };
-        
-        this.entities = {
-            pBullets: [], eBullets: [], enemies: [], particles: [], texts: [], items: []
-        };
-        
+        this.entities = { pBullets: [], eBullets: [], enemies: [], particles: [], texts: [], items: [] };
         this.updateUI();
     }
 
@@ -339,15 +317,13 @@ class Game {
         document.getElementById('shopScreen').classList.add('hidden');
         this.wave++;
         this.waveProgress = 0;
-        this.waveGoal = 15 + this.wave * 5;
+        this.waveGoal = 15 + this.wave * 8; // 每波增加更多击杀目标
         this.entities.pBullets = [];
         this.entities.eBullets = [];
         this.entities.items = [];
         this.state = 'PLAY';
         this.run();
     }
-
-    // --- 核心循环 ---
 
     run() {
         if (this.state !== 'PLAY') return;
@@ -358,12 +334,11 @@ class Game {
     }
 
     update() {
-        // 生成子弹
+        // 玩家射击
         if (this.frame % Math.floor(this.player.rate) === 0) {
             const cnt = this.player.bullets;
             const isBuffed = this.player.buffTime > 0;
             if(isBuffed) this.player.buffTime--;
-
             for(let i=0; i<cnt; i++) {
                 const angle = (i - (cnt-1)/2) * 0.15;
                 this.entities.pBullets.push({
@@ -375,27 +350,30 @@ class Game {
             }
         }
 
-        // 生成敌人
-        const spawnRate = Math.max(20, 60 - this.wave * 2);
+        // 敌人生成公式优化：越往后，生成越快
+        // Wave 1: 50帧/个, Wave 5: 30帧/个, Wave 10: 10帧/个
+        const spawnRate = Math.max(10, 55 - this.wave * 4); 
         if (this.frame % spawnRate === 0) this.spawnEnemy();
 
-        // 更新实体
         this.updateEntities();
     }
 
     spawnEnemy() {
         const r = Math.random();
         let type = 0; 
-        if (this.wave > 1 && r < 0.3) type = 1;
-        if (this.wave > 2 && r < 0.15) type = 2;
-        if (this.wave > 3 && r < 0.1) type = 3;
+        // 随波次增加高级敌人概率
+        if (this.wave > 1 && r < 0.3 + (this.wave*0.02)) type = 1;
+        if (this.wave > 2 && r < 0.15 + (this.wave*0.02)) type = 2;
+        if (this.wave > 3 && r < 0.1 + (this.wave*0.02)) type = 3;
 
-        const hpScale = 1 + (this.wave * 0.2);
+        const hpScale = 1 + (this.wave * 0.25); // 血量每波+25%
+        
+        // 增加了 dmg (伤害) 属性
         const stats = [
-            { hp: 20, spd: 3, col: '#ff0055', score: 10, r:15 }, // Basic
-            { hp: 10, spd: 5, col: '#ffff00', score: 20, r:12 }, // Fast
-            { hp: 100, spd: 1, col: '#bc13fe', score: 50, r:25 }, // Tank
-            { hp: 40, spd: 2, col: '#fff', score: 30, r:18 }     // Shooter
+            { hp: 20, spd: 3, col: '#ff0055', score: 10, r:15, dmg: 15 }, // Basic: 伤害15
+            { hp: 10, spd: 5, col: '#ffff00', score: 20, r:12, dmg: 10 }, // Fast: 伤害10
+            { hp: 100, spd: 1, col: '#bc13fe', score: 50, r:25, dmg: 40 }, // Tank: 伤害40
+            { hp: 40, spd: 2, col: '#fff', score: 30, r:18, dmg: 15 }     // Shooter: 伤害15
         ];
 
         const cfg = stats[type];
@@ -403,7 +381,7 @@ class Game {
             x: Math.random()*(this.w-40)+20, y: -40,
             hp: cfg.hp * hpScale, maxHp: cfg.hp * hpScale,
             spd: cfg.spd, score: cfg.score, color: cfg.col, r: cfg.r,
-            type: type, lastShot: 0
+            dmg: cfg.dmg, type: type, lastShot: 0
         });
     }
 
@@ -423,11 +401,9 @@ class Game {
             let b = eBullets[i];
             b.x += b.vx; b.y += b.vy;
             if (Math.hypot(b.x - p.x, b.y - p.y) < p.r + 5) {
-                p.hp -= 10;
+                this.takeDamage(b.dmg); // 子弹伤害
                 this.explode(p.x, p.y, '#f00', 5);
                 eBullets.splice(i, 1);
-                this.checkOver();
-                this.updateUI();
             } else if (b.y > this.h || b.y < -50 || b.x < -50 || b.x > this.w + 50) {
                 eBullets.splice(i, 1);
             }
@@ -453,19 +429,18 @@ class Game {
             if (e.type === 3 && this.frame - e.lastShot > 100) {
                 e.lastShot = this.frame;
                 let angle = Math.atan2(p.y - e.y, p.x - e.x);
-                eBullets.push({x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6});
+                // 敌人子弹伤害 15
+                eBullets.push({x: e.x, y: e.y, vx: Math.cos(angle)*6, vy: Math.sin(angle)*6, dmg: 15});
             }
 
             // 撞玩家
             if (Math.hypot(e.x - p.x, e.y - p.y) < e.r + p.r) {
-                p.hp -= 20;
+                this.takeDamage(e.dmg); // 撞击伤害
                 e.hp = 0;
                 this.explode(e.x, e.y, e.color, 10);
-                this.checkOver();
-                this.updateUI();
             }
 
-            // 被击中
+            // 被玩家击中
             for (let j = pBullets.length-1; j>=0; j--) {
                 let b = pBullets[j];
                 if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + 10) {
@@ -486,11 +461,20 @@ class Game {
                 }
             }
             if (e.y > this.h && e.hp > 0) enemies.splice(i, 1);
+            if (e.hp <= 0 && enemies.includes(e)) { enemies.splice(i, 1); this.checkWave(); this.updateUI(); }
         }
 
-        // 清理特效
         this.entities.particles = this.entities.particles.filter(p => { p.x+=p.vx; p.y+=p.vy; p.life-=0.05; return p.life>0; });
         this.entities.texts = this.entities.texts.filter(t => { t.y-=1; t.life-=0.02; return t.life>0; });
+    }
+
+    // 受到伤害处理
+    takeDamage(amount) {
+        this.player.hp -= amount;
+        // 伤害数字显示
+        this.addText(`-${amount}`, this.player.x, this.player.y - 30, '#ff0055');
+        this.checkOver();
+        this.updateUI();
     }
 
     dropItem(x, y) {
@@ -519,7 +503,6 @@ class Game {
                 }
             } catch(e){}
             document.getElementById('endScore').innerText = this.score;
-            document.getElementById('endBest').innerText = this.highScore;
             document.getElementById('overScreen').classList.remove('hidden');
             cancelAnimationFrame(this.loopId);
         }
@@ -559,8 +542,6 @@ class Game {
             else el.classList.remove('disabled');
         });
     }
-
-    // --- 渲染 ---
 
     draw() {
         this.ctx.fillStyle = '#050b14'; this.ctx.fillRect(0,0,this.w,this.h);
@@ -645,7 +626,11 @@ class Game {
     updateUI() {
         document.getElementById('uiScore').innerText = this.score;
         document.getElementById('uiCoins').innerText = this.coins;
-        document.getElementById('uiHp').style.width = Math.max(0, (this.player.hp/this.player.maxHp)*100) + "%";
+        // 更新血条
+        const hpPct = Math.max(0, (this.player.hp/this.player.maxHp)*100);
+        document.getElementById('uiHp').style.width = hpPct + "%";
+        // 更新血量文字
+        document.getElementById('uiHpText').innerText = `HP: ${Math.floor(Math.max(0, this.player.hp))} / ${this.player.maxHp}`;
     }
 
     spawnParticle(x, y, c, n) { for(let i=0; i<n; i++) this.entities.particles.push({x, y, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*4, life:1, color:c}); }
@@ -653,9 +638,7 @@ class Game {
     addText(s, x, y, c) { this.entities.texts.push({str:s, x, y, color:c, life:1}); }
 }
 
-// 确保全局变量可用
 window.game = new Game();
-
 </script>
 </body>
 </html>
